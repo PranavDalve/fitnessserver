@@ -4,12 +4,12 @@ const router=express.Router();
 const User=require('../Models/User');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
-const fetchuser=require('../Middleware/fetchuser');
+const fetchuser=require('../middleware/fetchuser');
 
 const JWT_SECRET=process.env.JWT_SECRET;
 
 //ROUTE1:create a user using :POST "/api/auth/createuser".No login required
-router.post('/signup',[
+router.post('/createuser',[
     body('name','Enter valid username'),
     body('email','Enter valid email'),
     body('password','Length of password must be greater then 5'),
@@ -37,7 +37,7 @@ router.post('/signup',[
     let user=await User.create({
         name: req.body.name,
         email: req.body.email,
-        password: secpass, 
+        password: secpass,
     });
     const data={
         user:{
@@ -46,20 +46,30 @@ router.post('/signup',[
     }
     const authtoken=jwt.sign(data,JWT_SECRET);
     success=true;
-    res.json({success,authtoken,success:'Registration complete sucessfully'})
+    res.json({success,authtoken,Sucess:'Registration complete sucessfully'})
 }catch(error){
     console.error(error.message);
     res.status(500).send("Some error occured")
 }
 })
+    // .then(user=>res.json(user))
+    //   .catch(err=>{console.log(err)
+    // res.json({error:'Please enter a Unique value for gmail'})}
+    // )},
+//   );
 
+   //Alternate method
+    // const user=await User(req.body);
+    // user.save()
+    // res.send(req.body);
+//});
 
 
 // -----------------------------------------------------------------------------------------------------------------------------
 // ROUTE2:Login a user using POST:api/auth/login.No login required.
 router.post('/login',[
-    body('email','Enter valid email'),
-    body('password','password cannot be blank'),
+    body('email','Enter valid email').isEmail(),
+    body('password','password cannot be blank').exists(),
 ],async(req,res)=>{
     let success=false;
     const errors = validationResult(req);
@@ -72,13 +82,13 @@ router.post('/login',[
         let user=await User.findOne({email});
         if(!user){
             success=false;
-            return res.status(400).json({success,error:"Please enter valid crediantals - 1"})
+            return res.status(400).json({success,error:"Please enter valid crediantals"})
         }
 
         const comparepassword=await bcrypt.compare(password,user.password);
         if(!comparepassword){
             success=false;
-            return res.status(400).json({success,errors:"Please enter valid crediantals-2"});
+            return res.status(400).json({success,errors:"Please enter valid crediantals"});
         }
 
         const data={
@@ -91,14 +101,15 @@ router.post('/login',[
         res.json({success,authtoken})
     }catch(error){
         console.error(error.message);
-        res.status(500).send("Some error occured")
+    res.status(500).send("Some error occured")
     }
 })
 
 
 // --------------------------------------------------------------------------------------------------------------------------------
 // ROUTE3:Get logged in user detail using POST:api/auth/getuser.Login required
-router.get('/veryhelpful',fetchuser,async(req,res)=>{
+
+router.post('/getuser',fetchuser,async(req,res)=>{
     try {
      let userid=req.user.id;
      const user=await User.findById(userid).select("-password");
@@ -110,22 +121,5 @@ router.get('/veryhelpful',fetchuser,async(req,res)=>{
 }
 });
 
-
-// router 4 : update the user profile
-router.put('/updateprofile',fetchuser,async(req,res)=>{
-    try {
-        const {name} = req.body;
-        const newuser = {};
-        if(name){newuser.name=name};
-        let user = await User.findById(req.user.id);
-        if(!user){
-            return res.status(405).send('User Not Found')
-        }
-        user = await User.findByIdAndUpdate(req.user.id,{$set:newuser},{new:true});
-        res.json(user);
-    } catch (error) {
-        console.log(error);
-    }
-})
 
 module.exports=router
