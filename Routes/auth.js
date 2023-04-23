@@ -46,7 +46,7 @@ router.post('/signup',[
     }
     const authtoken=jwt.sign(data,JWT_SECRET);
     success=true;
-    res.json({success,authtoken,Sucess:'Registration complete sucessfully'})
+    res.json({success,authtoken,success:'Registration complete sucessfully'})
 }catch(error){
     console.error(error.message);
     res.status(500).send("Some error occured")
